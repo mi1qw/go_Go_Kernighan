@@ -20,8 +20,8 @@ func main() {
 	fmt.Printf("%s\n", a)
 }
 
-func reverseStringUTF(bytes1 *[]byte) {
-	var bytes = *bytes1
+func reverseStringUTF(bytes_ *[]byte) {
+	var bytes = *bytes_
 	var sizeF, sizeL, sizeM int
 	var bF = make([]byte, len(bytes))
 	var bFi, bLi int
@@ -41,5 +41,5 @@ func reverseStringUTF(bytes1 *[]byte) {
 		_, sizeM = utf8.DecodeRune(bytes[f:])
 		copy(bF[bFi:], bytes[f:f+sizeM])
 	}
-	copy(*bytes1, bF)
+	copy(*bytes_, bF)
 }
