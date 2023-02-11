@@ -37,3 +37,6 @@ build/
 *.mv.db
 
 /pkg/mod/
+/pkg/
+/go.sum
+/index.html
