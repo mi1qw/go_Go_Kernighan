@@ -41,7 +41,8 @@ type NodeVal struct {
 
 func main() {
 	// todo добавить конец строки в регулярку
-	reg, err := regexp.Compile("^+\n")
+	//reg, err := regexp.Compile("^\n+\\s*\n*\\z")
+	reg, err := regexp.Compile("^[\n\\s]*\\z")
 	var elements = map[string]int{
 		"div":    0,
 		"p":      0,
@@ -68,8 +69,8 @@ func main() {
 		fmt.Printf("%-5s %d\n", k, v)
 	}
 
-	for _, val := range textNodes {
-		str := val.val
+	for _, node := range textNodes {
+		str := node.val
 		if !reg.MatchString(str) {
 			fmt.Printf("%s", str)
 		}
