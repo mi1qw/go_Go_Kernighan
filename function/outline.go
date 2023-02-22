@@ -92,7 +92,6 @@ func prntAttr(n *html.Node, depth int, f func()) {
 				fmt.Printf(" %s=\"%s\"", attribute.Key, attribute.Val)
 			}
 		}
-
 	}
 }
 func getPrevType(n *html.Node) html.NodeType {
@@ -109,12 +108,11 @@ func getPrevType(n *html.Node) html.NodeType {
 	return node.Type
 }
 
-func getPrevType1(n *html.Node, f func() *html.Node) html.NodeType {
-	node := f()
-	if node == nil {
+func getPrevType1(n *html.Node) html.NodeType {
+	if n == nil {
 		return html.ElementNode
 	}
-	//node := n.PrevSibling
+	node := n
 	for node != nil && checkSpace(node.Data) {
 		node = node.PrevSibling
 	}
@@ -126,62 +124,26 @@ func getPrevType1(n *html.Node, f func() *html.Node) html.NodeType {
 
 func startElement(n *html.Node) {
 	if n.Type == html.ElementNode {
-		/*	if n.Parent!= nil && n.Parent.Type==html.ElementNode{
-				fmt.Printf("\n")
-			}
-		*/
-		//fmt.Printf("\n")
-		/*
-			if n.NextSibling != nil && n.NextSibling.Type != html.TextNode {
-				fmt.Printf("\n")
-			}
-			if n.FirstChild != nil && n.FirstChild.Type != html.TextNode {
-				fmt.Printf("\n")
-			}
-		*/
-		//	println(getPrevType(n), " !!!!!")
-		//	if n.PrevSibling != nil && n.PrevSibling.Type == html.TextNode {
 		if getPrevType(n) == html.TextNode {
 			fmt.Printf("<%s", n.Data)
 		} else {
 			fmt.Printf("\n%*s<%s", depth*2, "", n.Data)
 		}
-
 		depth++
-		/*
-			if n.NextSibling != nil && n.NextSibling.Type == html.ElementNode {
-				println()
-			}
-			if n.NextSibling != nil && n.NextSibling.Type == html.TextNode &&
-				checkSpace(n.NextSibling.Data) {
-				println()
-			}
-		*/
 		prntAttr(n, depth, func() {
-
 		})
-
 		if n.LastChild == nil {
 			fmt.Printf("/>")
 		} else {
 			fmt.Printf(">")
 		}
-
 	} else {
 		if !checkSpace(n.Data) {
-			//fmt.Printf("%s", n.Data)
-			//fmt.Printf("%s\n", strings.TrimSpace(n.Data))
-
 			if n.Parent != nil && n.Parent.Type == html.ElementNode {
 				fmt.Printf("%s", n.Data)
 			} else {
 				fmt.Printf("%*s%s", depth*2, "", n.Data)
 			}
-		} else {
-			//if n.Type == html.TextNode {
-			//fmt.Printf("%s\n", strings.TrimSpace(n.Data))
-			//depth++
-			//}
 		}
 	}
 }
@@ -189,19 +151,13 @@ func startElement(n *html.Node) {
 func endElement(n *html.Node) {
 	if n.Type == html.ElementNode {
 		depth--
-		//f n.LastChild != nil && n.LastChild.Type != html.TextNode {
-		typeN := getPrevType1(n, func() *html.Node { return n.LastChild })
-		//	fmt.Printf("%v", typeN)
+		typeN := getPrevType1(n.LastChild)
 		if n.LastChild != nil {
 			if typeN == html.TextNode {
 				fmt.Printf("</%s>", n.Data)
 			} else {
 				fmt.Printf("\n%*s</%s>", depth*2, "", n.Data)
 			}
-
-		} else {
-			//fmt.Printf("\n")
-			//fmt.Printf("<%s/>\n", n.Data)
 		}
 	}
 }
