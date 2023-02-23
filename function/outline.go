@@ -7,6 +7,7 @@
 // вывода HTML. Выводите узлы комментариев, текстовые узлы и атрибуты каждого
 // элемента (<а href=*...’ >). Используйте сокращенный вывод наподобие <img/>
 // вместо <img></img>, когда элемент не имеет дочерних узлов.
+// http://www.gopl.io/
 
 // Outline prints the outline of an HTML document tree.
 package main
@@ -23,8 +24,6 @@ var reg *regexp.Regexp
 
 func main() {
 	reg, _ = regexp.Compile("^[^\\w\\$\\*\\+\\?\\{\\}\\[\\]\\\\\\|\\(\\)]*$")
-	//	reg, _ = regexp.Compile("^[\\n\\s]*$")
-	//reg, _ = regexp.Compile("^\n*\\s*\n*\\s*\\z")
 	for _, url := range os.Args[1:] {
 		outline(url)
 	}
@@ -80,9 +79,9 @@ func checkSpace(s string) bool {
 
 var depth int
 
-func prntAttr(n *html.Node, depth int, f func()) {
+func prntAttr(n *html.Node, depth int) {
 	if n.Attr != nil {
-		if len(n.Attr) > 2 {
+		if len(n.Attr) > 3 {
 			for _, attribute := range n.Attr {
 				fmt.Printf("\n%*s%s=\"%s\"",
 					depth*2, "", attribute.Key, attribute.Val)
@@ -94,55 +93,41 @@ func prntAttr(n *html.Node, depth int, f func()) {
 		}
 	}
 }
-func getPrevType(n *html.Node) html.NodeType {
-	if n.PrevSibling == nil {
-		return html.ElementNode
-	}
-	node := n.PrevSibling
-	for node != nil && checkSpace(node.Data) {
-		node = node.PrevSibling
-	}
-	if node == nil {
-		return html.ElementNode
-	}
-	return node.Type
-}
 
-func getPrevType1(n *html.Node) html.NodeType {
+func getPrevType(n *html.Node) html.NodeType {
+	for n != nil && checkSpace(n.Data) {
+		n = n.PrevSibling
+	}
 	if n == nil {
 		return html.ElementNode
 	}
-	node := n
-	for node != nil && checkSpace(node.Data) {
-		node = node.PrevSibling
-	}
-	if node == nil {
-		return html.ElementNode
-	}
-	return node.Type
+	return n.Type
 }
 
 func startElement(n *html.Node) {
 	if n.Type == html.ElementNode {
-		if getPrevType(n) == html.TextNode {
+		if getPrevType(n.PrevSibling) == html.TextNode {
 			fmt.Printf("<%s", n.Data)
 		} else {
 			fmt.Printf("\n%*s<%s", depth*2, "", n.Data)
 		}
 		depth++
-		prntAttr(n, depth, func() {
-		})
+		prntAttr(n, depth)
 		if n.LastChild == nil {
 			fmt.Printf("/>")
 		} else {
 			fmt.Printf(">")
 		}
 	} else {
-		if !checkSpace(n.Data) {
-			if n.Parent != nil && n.Parent.Type == html.ElementNode {
-				fmt.Printf("%s", n.Data)
-			} else {
-				fmt.Printf("%*s%s", depth*2, "", n.Data)
+		if n.Type == html.CommentNode {
+			fmt.Printf("\n<!-- %s -->", n.Data)
+		} else {
+			if !checkSpace(n.Data) {
+				if n.Parent != nil && n.Parent.Type == html.ElementNode {
+					fmt.Printf("%s", n.Data)
+				} else {
+					fmt.Printf("%*s%s", depth*2, "", n.Data)
+				}
 			}
 		}
 	}
@@ -151,7 +136,7 @@ func startElement(n *html.Node) {
 func endElement(n *html.Node) {
 	if n.Type == html.ElementNode {
 		depth--
-		typeN := getPrevType1(n.LastChild)
+		typeN := getPrevType(n.LastChild)
 		if n.LastChild != nil {
 			if typeN == html.TextNode {
 				fmt.Printf("</%s>", n.Data)
