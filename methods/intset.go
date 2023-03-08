@@ -12,7 +12,7 @@ func (*IntSet) Copy() *IntSet 	// Возвращает копию множест
 */
 
 // Package intset provides a set of integers based on a bit vector.
-package intset
+package main
 
 import (
 	"bytes"
@@ -25,6 +25,60 @@ import (
 // Its zero value represents the empty set.
 type IntSet struct {
 	words []uint64
+}
+
+func main() {
+	var x, y IntSet
+
+	x.Add(1)
+	x.Add(8)
+	x.Add(40)
+	println(x.String())
+
+	a := x.Copy()
+	println(a.String(), a.Len())
+
+	println(x.Len())
+
+	x.Remove(8)
+	println(x.String())
+
+	x.Clear()
+	println(x.String(), x.Len())
+
+	y.Add(1)
+	println(y.String())
+	println(y.Len())
+}
+
+func (s *IntSet) Copy() *IntSet {
+	var x IntSet
+	x.words = make([]uint64, len(s.words))
+	copy(x.words, s.words)
+	return &x
+}
+
+func (s *IntSet) Clear() {
+	s.words = make([]uint64, 0)
+}
+
+func (s *IntSet) Remove(x int) {
+	word, bit := x/64, uint(x%64)
+	if word < len(s.words) {
+		s.words[word] &^= 1 << bit
+	}
+}
+
+func (s *IntSet) Len() int {
+	count := 0
+	for _, word := range s.words {
+		for i := 0; i < 64; i++ {
+			if word&(1<<uint(i)) != 0 {
+				count++
+			}
+		}
+	}
+	return count
 }
 
 // Has reports whether the set contains the non-negative value x.
@@ -78,4 +132,4 @@ func (s *IntSet) String() string {
 	return buf.String()
 }
 
-//!-string
+// !-string
