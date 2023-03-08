@@ -13,6 +13,12 @@ func (*IntSet) Copy() *IntSet 	// Возвращает копию множест
 Упражнение 6.2. Определите вариативный метод (*IntSet).AddAll(...int),
 который позволяет добавлять список значений, например s.AddAll(1,2,3).
 
+Упражнение 6.3. (*IntSet).UnionWith вычисляет объединение двух мно
+жеств с помощью оператора |, побитового оператора ИЛИ. Реализуйте методы
+IntersectWith, DifferenceWith и SymmetricDifference для соответствующих
+операций над множествами. (Симметричная разность двух множеств содержит эле
+менты, имеющиеся в одном из множеств, но не в обоих одновременно.)
+
 */
 
 // Package intset provides a set of integers based on a bit vector.
@@ -37,24 +43,47 @@ func main() {
 	x.Add(1)
 	x.Add(8)
 	x.Add(40)
-	println(x.String())
+	println("x", x.String(), x.Len())
 
 	a := x.Copy()
-	println(a.String(), a.Len())
-
-	println(x.Len())
 
 	x.Remove(8)
-	println(x.String())
+	println("x remove", x.String(), x.Len())
 
 	x.Clear()
-	println(x.String(), x.Len())
-
-	y.Add(1)
-	println(y.String(), y.Len())
+	println("x", x.String(), x.Len())
+	println("Copy", a.String(), a.Len())
 
 	y.AddAll(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 255)
-	println(y.String(), y.Len())
+	println("y", y.String(), y.Len())
+
+	// IntersectWith
+	for i := 0; i < 8; i++ {
+		x.Add(i)
+		// fmt.Printf("%08b\t%d\n", x.words, i)
+	}
+	x.Remove(5)
+	println("x", x.String(), x.Len())
+	// x.AddAll(65)
+	fmt.Printf("%08b x\n", x.words)
+
+	y.Clear()
+	y.AddAll(0, 2, 3, 4, 5, 64)
+
+	fmt.Printf("%08b y\n", y.words)
+	fmt.Printf("%08b Intersect\n", x.IntersectWith(&y).words)
+	// fmt.Printf("%08b Intersect\n", y.IntersectWith(&x).words)
+	fmt.Printf("%08b Difference\n", x.DifferenceWith(&y).words)
+	// fmt.Printf("%08b Difference\n", y.DifferenceWith(&x).words)
+	fmt.Printf("%08b x SymmetricDifference y \n", x.SymmetricDifference(&y).words)
+	fmt.Printf("%08b y SymmetricDifference x \n", y.SymmetricDifference(&x).words)
+
+	/*
+		fmt.Printf("%0b y\n", y.words)
+		fmt.Printf("%0b Intersect\n", x.IntersectWith(&y).words)
+		fmt.Printf("%0b Difference\n", x.DifferenceWith(&y).words)
+		fmt.Printf("%0b SymmetricDifference\n", x.SymmetricDifference(&y).words)
+	*/
 }
 
 func (s *IntSet) AddAll(n ...int) {
@@ -121,7 +150,64 @@ func (s *IntSet) UnionWith(t *IntSet) {
 
 //!-intset
 
+func (s *IntSet) IntersectWith(t *IntSet) *IntSet {
+	var intersect IntSet
+	lens, lent := len(s.words), len(t.words)
+	if lent >= lens {
+		for i, word := range s.words {
+			iskt := word & t.words[i]
+			intersect.words = append(intersect.words, iskt)
+		}
+		return &intersect
+	}
+	for i, word := range t.words {
+		iskt := word & s.words[i]
+		intersect.words = append(intersect.words, iskt)
+	}
+	return &intersect
+}
+
+func (s *IntSet) DifferenceWith(t *IntSet) *IntSet {
+	lens, lent := len(s.words), len(t.words)
+	if lent >= lens {
+		return aaa(s, t, lens, lent)
+	}
+	return aaa(t, s, lent, lens)
+}
+
 //!+string
+
+func aaa(s, t *IntSet, lens, lent int) *IntSet {
+	var diff IntSet
+	for i, word := range s.words {
+		df := word ^ t.words[i]
+		diff.words = append(diff.words, df)
+	}
+	for i := lens; i < lent; i++ {
+		diff.words = append(diff.words, t.words[i])
+	}
+	return &diff
+}
+
+func (s *IntSet) SymmetricDifference(t *IntSet) *IntSet {
+	var diff IntSet
+	lens, lent := len(s.words), len(t.words)
+	if lens > lent {
+		for i, word := range t.words {
+			df := s.words[i] &^ word
+			diff.words = append(diff.words, df)
+		}
+		for i := lent; i < lens; i++ {
+			diff.words = append(diff.words, s.words[i])
+		}
+		return &diff
+	}
+	for i, word := range s.words {
+		df := word &^ t.words[i]
+		diff.words = append(diff.words, df)
+	}
+	return &diff
+}
 
 // String returns the set as a string of the form "{1 2 3}".
 func (s *IntSet) String() string {
