@@ -9,6 +9,10 @@ func (*IntSet) Len() int 		// Возвращает количество элем
 func (*IntSet) Remove(x int) 	// Удаляет x из множества
 func (*IntSet) Clear() 			// Удаляет все элементы множества
 func (*IntSet) Copy() *IntSet 	// Возвращает копию множества
+
+Упражнение 6.2. Определите вариативный метод (*IntSet).AddAll(...int),
+который позволяет добавлять список значений, например s.AddAll(1,2,3).
+
 */
 
 // Package intset provides a set of integers based on a bit vector.
@@ -47,8 +51,16 @@ func main() {
 	println(x.String(), x.Len())
 
 	y.Add(1)
-	println(y.String())
-	println(y.Len())
+	println(y.String(), y.Len())
+
+	y.AddAll(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 255)
+	println(y.String(), y.Len())
+}
+
+func (s *IntSet) AddAll(n ...int) {
+	for _, x := range n {
+		s.Add(x)
+	}
 }
 
 func (s *IntSet) Copy() *IntSet {
