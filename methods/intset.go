@@ -19,6 +19,10 @@ IntersectWith, DifferenceWith и SymmetricDifference для соответств
 операций над множествами. (Симметричная разность двух множеств содержит эле
 менты, имеющиеся в одном из множеств, но не в обоих одновременно.)
 
+Упражнение 6.4. Добавьте метод Elems, который возвращает срез, содержащий
+элементы множества и годящийся для итерирования с использованием цикла по диа
+пазону range.
+
 */
 
 // Package intset provides a set of integers based on a bit vector.
@@ -56,6 +60,11 @@ func main() {
 
 	y.AddAll(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 255)
 	println("y", y.String(), y.Len())
+	fmt.Printf("   ")
+	for _, i := range y.Elems() {
+		fmt.Printf("%d ", i)
+	}
+	println()
 
 	// IntersectWith
 	for i := 0; i < 8; i++ {
@@ -69,14 +78,14 @@ func main() {
 
 	y.Clear()
 	y.AddAll(0, 2, 3, 4, 5, 64)
-
 	fmt.Printf("%08b y\n", y.words)
 	fmt.Printf("%08b Intersect\n", x.IntersectWith(&y).words)
-	fmt.Printf("%08b Intersect\n", y.IntersectWith(&x).words)
+	// fmt.Printf("%08b Intersect\n", y.IntersectWith(&x).words)
 	fmt.Printf("%08b Difference\n", x.DifferenceWith(&y).words)
-	fmt.Printf("%08b Difference\n", y.DifferenceWith(&x).words)
+	// fmt.Printf("%08b Difference\n", y.DifferenceWith(&x).words)
 	fmt.Printf("%08b x SymmetricDifference y \n", x.SymmetricDifference(&y).words)
 	fmt.Printf("%08b y SymmetricDifference x \n", y.SymmetricDifference(&x).words)
+
 }
 
 func (s *IntSet) AddAll(n ...int) {
@@ -177,6 +186,21 @@ func (s *IntSet) SymmetricDifference(t *IntSet) *IntSet {
 		return diff
 	}
 	return copyApply(s, t, func(a, b uint64) uint64 { return a &^ b })
+}
+
+func (s *IntSet) Elems() []int {
+	var res []int
+	for i, word := range s.words {
+		if word == 0 {
+			continue
+		}
+		for j := 0; j < 64; j++ {
+			if word&(1<<j) != 0 {
+				res = append(res, 64*i+j)
+			}
+		}
+	}
+	return res
 }
 
 // String returns the set as a string of the form "{1 2 3}".
