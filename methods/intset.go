@@ -23,6 +23,14 @@ IntersectWith, DifferenceWith и SymmetricDifference для соответств
 элементы множества и годящийся для итерирования с использованием цикла по диа
 пазону range.
 
+Упражнение 6.5. Типом каждого слова, используемого в IntSet, является
+uint64, но 64-разрядная арифметика может быть неэффективной на 32-разрядных
+платформах. Измените программу так, чтобы она использовала тип uint, который
+представляет собой наиболее эффективный беззнаковый целочисленный тип для
+данной платформы. Вместо деления на 64 определите константу, в которой хранится
+эффективный размер uint в битах, 32 или 64. Для этого можно воспользоваться,
+возможно, слишком умным выражением 32<<(Auint(0)>>63).
+
 */
 
 // Package intset provides a set of integers based on a bit vector.
@@ -38,8 +46,10 @@ import (
 // An IntSet is a set of small non-negative integers.
 // Its zero value represents the empty set.
 type IntSet struct {
-	words []uint64
+	words []uint
 }
+
+const bitOS = 32 << (^uint(0) >> 63)
 
 func main() {
 	var x, y IntSet
@@ -96,17 +106,17 @@ func (s *IntSet) AddAll(n ...int) {
 
 func (s *IntSet) Copy() *IntSet {
 	var x IntSet
-	x.words = make([]uint64, len(s.words))
+	x.words = make([]uint, len(s.words))
 	copy(x.words, s.words)
 	return &x
 }
 
 func (s *IntSet) Clear() {
-	s.words = make([]uint64, 0)
+	s.words = make([]uint, 0)
 }
 
 func (s *IntSet) Remove(x int) {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/bitOS, uint(x%bitOS)
 	if word < len(s.words) {
 		s.words[word] &^= 1 << bit
 	}
@@ -115,7 +125,7 @@ func (s *IntSet) Remove(x int) {
 func (s *IntSet) Len() int {
 	count := 0
 	for _, word := range s.words {
-		for i := 0; i < 64; i++ {
+		for i := 0; i < bitOS; i++ {
 			if word&(1<<uint(i)) != 0 {
 				count++
 			}
@@ -126,13 +136,13 @@ func (s *IntSet) Len() int {
 
 // Has reports whether the set contains the non-negative value x.
 func (s *IntSet) Has(x int) bool {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/bitOS, uint(x%bitOS)
 	return word < len(s.words) && s.words[word]&(1<<bit) != 0
 }
 
 // Add adds the non-negative value x to the set.
 func (s *IntSet) Add(x int) {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/bitOS, uint(x%bitOS)
 	for word >= len(s.words) {
 		s.words = append(s.words, 0)
 	}
@@ -150,7 +160,7 @@ func (s *IntSet) UnionWith(t *IntSet) {
 	}
 }
 
-func copyApply(a, b *IntSet, f func(uint64, uint64) uint64) *IntSet {
+func copyApply(a, b *IntSet, f func(uint, uint) uint) *IntSet {
 	var res IntSet
 	for i, word := range a.words {
 		res.words = append(res.words, f(word, b.words[i]))
@@ -161,19 +171,19 @@ func copyApply(a, b *IntSet, f func(uint64, uint64) uint64) *IntSet {
 func (s *IntSet) IntersectWith(t *IntSet) *IntSet {
 	lens, lent := len(s.words), len(t.words)
 	if lent >= lens {
-		return copyApply(s, t, func(a, b uint64) uint64 { return a & b })
+		return copyApply(s, t, func(a, b uint) uint { return a & b })
 	}
-	return copyApply(t, s, func(a, b uint64) uint64 { return a & b })
+	return copyApply(t, s, func(a, b uint) uint { return a & b })
 }
 
 func (s *IntSet) DifferenceWith(t *IntSet) *IntSet {
 	lens, lent := len(s.words), len(t.words)
 	if lent >= lens {
-		diff := copyApply(s, t, func(a, b uint64) uint64 { return a ^ b })
+		diff := copyApply(s, t, func(a, b uint) uint { return a ^ b })
 		diff.words = append(diff.words, t.words[lens:lent]...)
 		return diff
 	}
-	diff := copyApply(t, s, func(a, b uint64) uint64 { return a ^ b })
+	diff := copyApply(t, s, func(a, b uint) uint { return a ^ b })
 	diff.words = append(diff.words, s.words[lent:lens]...)
 	return diff
 }
@@ -181,11 +191,11 @@ func (s *IntSet) DifferenceWith(t *IntSet) *IntSet {
 func (s *IntSet) SymmetricDifference(t *IntSet) *IntSet {
 	lens, lent := len(s.words), len(t.words)
 	if lens > lent {
-		diff := copyApply(t, s, func(b, a uint64) uint64 { return a &^ b })
+		diff := copyApply(t, s, func(b, a uint) uint { return a &^ b })
 		diff.words = append(diff.words, s.words[lent:lens]...)
 		return diff
 	}
-	return copyApply(s, t, func(a, b uint64) uint64 { return a &^ b })
+	return copyApply(s, t, func(a, b uint) uint { return a &^ b })
 }
 
 func (s *IntSet) Elems() []int {
@@ -194,9 +204,9 @@ func (s *IntSet) Elems() []int {
 		if word == 0 {
 			continue
 		}
-		for j := 0; j < 64; j++ {
+		for j := 0; j < bitOS; j++ {
 			if word&(1<<j) != 0 {
-				res = append(res, 64*i+j)
+				res = append(res, bitOS*i+j)
 			}
 		}
 	}
@@ -211,12 +221,12 @@ func (s *IntSet) String() string {
 		if word == 0 {
 			continue
 		}
-		for j := 0; j < 64; j++ {
+		for j := 0; j < bitOS; j++ {
 			if word&(1<<uint(j)) != 0 {
 				if buf.Len() > len("{") {
 					buf.WriteByte(' ')
 				}
-				fmt.Fprintf(&buf, "%d", 64*i+j)
+				fmt.Fprintf(&buf, "%d", bitOS*i+j)
 			}
 		}
 	}
