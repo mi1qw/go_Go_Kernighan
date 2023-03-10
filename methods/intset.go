@@ -72,18 +72,11 @@ func main() {
 
 	fmt.Printf("%08b y\n", y.words)
 	fmt.Printf("%08b Intersect\n", x.IntersectWith(&y).words)
-	// fmt.Printf("%08b Intersect\n", y.IntersectWith(&x).words)
+	fmt.Printf("%08b Intersect\n", y.IntersectWith(&x).words)
 	fmt.Printf("%08b Difference\n", x.DifferenceWith(&y).words)
-	// fmt.Printf("%08b Difference\n", y.DifferenceWith(&x).words)
+	fmt.Printf("%08b Difference\n", y.DifferenceWith(&x).words)
 	fmt.Printf("%08b x SymmetricDifference y \n", x.SymmetricDifference(&y).words)
 	fmt.Printf("%08b y SymmetricDifference x \n", y.SymmetricDifference(&x).words)
-
-	/*
-		fmt.Printf("%0b y\n", y.words)
-		fmt.Printf("%0b Intersect\n", x.IntersectWith(&y).words)
-		fmt.Printf("%0b Difference\n", x.DifferenceWith(&y).words)
-		fmt.Printf("%0b SymmetricDifference\n", x.SymmetricDifference(&y).words)
-	*/
 }
 
 func (s *IntSet) AddAll(n ...int) {
@@ -148,65 +141,42 @@ func (s *IntSet) UnionWith(t *IntSet) {
 	}
 }
 
-//!-intset
+func copyApply(a, b *IntSet, f func(uint64, uint64) uint64) *IntSet {
+	var res IntSet
+	for i, word := range a.words {
+		res.words = append(res.words, f(word, b.words[i]))
+	}
+	return &res
+}
 
 func (s *IntSet) IntersectWith(t *IntSet) *IntSet {
-	var intersect IntSet
 	lens, lent := len(s.words), len(t.words)
 	if lent >= lens {
-		for i, word := range s.words {
-			iskt := word & t.words[i]
-			intersect.words = append(intersect.words, iskt)
-		}
-		return &intersect
+		return copyApply(s, t, func(a, b uint64) uint64 { return a & b })
 	}
-	for i, word := range t.words {
-		iskt := word & s.words[i]
-		intersect.words = append(intersect.words, iskt)
-	}
-	return &intersect
+	return copyApply(t, s, func(a, b uint64) uint64 { return a & b })
 }
 
 func (s *IntSet) DifferenceWith(t *IntSet) *IntSet {
 	lens, lent := len(s.words), len(t.words)
 	if lent >= lens {
-		return aaa(s, t, lens, lent)
+		diff := copyApply(s, t, func(a, b uint64) uint64 { return a ^ b })
+		diff.words = append(diff.words, t.words[lens:lent]...)
+		return diff
 	}
-	return aaa(t, s, lent, lens)
-}
-
-//!+string
-
-func aaa(s, t *IntSet, lens, lent int) *IntSet {
-	var diff IntSet
-	for i, word := range s.words {
-		df := word ^ t.words[i]
-		diff.words = append(diff.words, df)
-	}
-	for i := lens; i < lent; i++ {
-		diff.words = append(diff.words, t.words[i])
-	}
-	return &diff
+	diff := copyApply(t, s, func(a, b uint64) uint64 { return a ^ b })
+	diff.words = append(diff.words, s.words[lent:lens]...)
+	return diff
 }
 
 func (s *IntSet) SymmetricDifference(t *IntSet) *IntSet {
-	var diff IntSet
 	lens, lent := len(s.words), len(t.words)
 	if lens > lent {
-		for i, word := range t.words {
-			df := s.words[i] &^ word
-			diff.words = append(diff.words, df)
-		}
-		for i := lent; i < lens; i++ {
-			diff.words = append(diff.words, s.words[i])
-		}
-		return &diff
+		diff := copyApply(t, s, func(b, a uint64) uint64 { return a &^ b })
+		diff.words = append(diff.words, s.words[lent:lens]...)
+		return diff
 	}
-	for i, word := range s.words {
-		df := word &^ t.words[i]
-		diff.words = append(diff.words, df)
-	}
-	return &diff
+	return copyApply(s, t, func(a, b uint64) uint64 { return a &^ b })
 }
 
 // String returns the set as a string of the form "{1 2 3}".
@@ -229,5 +199,3 @@ func (s *IntSet) String() string {
 	buf.WriteByte('}')
 	return buf.String()
 }
-
-// !-string
