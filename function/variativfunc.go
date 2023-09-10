@@ -64,4 +64,43 @@ func main() {
 	println(min(1, 1, 1))
 	//println(max([]int{}...))
 	//!-slice
+	println(" -------------- MyStruct --------------- ")
+
+	ob := MyStruct[string]{Val: "Hello"}
+	println(ob.GetVal())
+	fmt.Printf("GetMystruct = %T \n\n", ob.GetMystruct())
+
+	data := Data{
+		name: "Data String",
+	}
+	obData := MyStruct[Data]{
+		Val: data,
+	}
+	//println(obData.GetVal())
+	fmt.Printf("%s \n", obData.GetVal().name)
+	fmt.Printf("GetMystruct = %T \n\n", obData.GetMystruct())
+
+	myStructData := NewMyStruct[Data]()
+	myStructData.Val = data
+	fmt.Printf("%s \n", obData.GetVal().name)
+
+}
+
+type MyStruct[T any] struct {
+	Val T
+}
+
+func (m *MyStruct[T]) GetVal() T {
+	return m.Val
+}
+func (m *MyStruct[T]) GetMystruct() *MyStruct[T] {
+	return m
+}
+
+func NewMyStruct[T any]() *MyStruct[T] {
+	return &MyStruct[T]{}
+}
+
+type Data struct {
+	name string
 }
