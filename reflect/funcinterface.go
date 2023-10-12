@@ -5,34 +5,31 @@ import (
 	"reflect"
 )
 
-type Mono[V comparable] struct {
-	prev *Mono[V]
+type MonoF[V comparable] struct {
+	prev *MonoF[V]
 	f    reflect.Value
 }
 
-func Map1[V comparable](m *Mono[V], f interface{}) *Mono[V] {
+func MapF[V comparable](m *MonoF[V], f interface{}) *MonoF[V] {
 	// Создаем reflect.Value из функции
 	fValue := reflect.ValueOf(f)
-	reflect.TypeOf(V)
 	// Проверяем, что fValue - это функция
 	if fValue.Kind() != reflect.Func {
 		panic("f is not a function")
 	}
 
-	newMono := &Mono[V]{
+	return &MonoF[V]{
 		prev: m,
 		f:    fValue,
 	}
-	return newMono
 }
 
 func main() {
-	// Пример использования Map1
-	m := &Mono[int]{}
+	m := &MonoF[int]{}
 	f := func(i int) int {
 		return i * 2
 	}
-	result := Map1(m, f)
+	result := MapF(m, f)
 
 	// Вызов сохраненной функции
 	args := []reflect.Value{reflect.ValueOf(5)} // Аргументы функции
